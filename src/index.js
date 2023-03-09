@@ -1,9 +1,20 @@
-import { config } from "dotenv";
+const { config } = require("dotenv")
 config();
-import { ChannelType, Client, Routes, SlashCommandBuilder } from "discord.js";
-import { REST } from "@discordjs/rest";
-import schedule from "node-schedule";
 
+const { ChannelType, Client, Routes, SlashCommandBuilder } = require("discord.js")
+const { REST } = require("@discordjs/rest")
+const schedule = require("node-schedule")
+
+const express = require('express');
+const app = express();
+app.get('/', (req, res) => {
+    const ping = new Date();
+    ping.setHours(ping.getHours() - 3);
+    console.log(`Ping recebido às ${ping.getUTCHours()}:${ping.getUTCMinutes()}`);
+    res.sendStatus(200);
+});
+app.listen(process.env.PORT);
+const TZ = process.env.TZ;
 const TOKEN = process.env.BOT_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
@@ -24,17 +35,17 @@ const commands = [
                 .setMaxLength(1000)
                 .setRequired(true)
         )
-        .addIntegerOption((option) =>
+        .addStringOption((option) =>
             option
                 .setName('tempo')
                 .setDescription('Quando a mensagem deve ser enviada')
                 .setChoices(
-                    { name: 'Das 08 as 18', value: 8-18 },
-                    { name: 'Das 09 as 18', value: 9-18 },
-                    { name: 'Das 10 as 18', value: 10-18 },
-                    { name: 'Das 11 as 18', value: 11-18 },
-                    { name: 'Das 12 as 18', value: 12-18 },
-                    { name: 'Das 13 as 18', value: 13-18 },
+                    { name: 'Das 08 as 18', value: '8-18' },
+                    { name: 'Das 09 as 18', value: '9-18' },
+                    { name: 'Das 10 as 18', value: '10-18' },
+                    { name: 'Das 11 as 18', value: '11-18' },
+                    { name: 'Das 12 as 18', value: '12-18' },
+                    { name: 'Das 13 as 18', value: '13-18' },
                 ).
                 setRequired(true)
         )
@@ -54,16 +65,13 @@ client.on('interactionCreate', async interaction => {
     if (interaction.isChatInputCommand()) {
         if (interaction.commandName === 'lembrete') {
             const message = interaction.options.getString('mensagem');
-            const time = interaction.options.getInteger('tempo');
+            const time = interaction.options.getString('tempo');
             const channel = interaction.options.getChannel('canal');
 
             interaction.reply({
                 content: 'Lembrete programado para todos os dias úteis no canal: ' + channel.toString() + ' com a mensagem: ' + message,
             });
-
-            console.log(message)
-
-            schedule.scheduleJob(`0 0 ${time} * * 1-5`, () => { //seconds, minutes, hours, day of month, month, day of week || 0-7 = all days of the week || 1-5 = all days of the week except saturday and sunday
+            schedule.scheduleJob({ rule: `* * ${time} * * 1-5`, TZ }, () => { //seconds, minutes, hours, day of month, month, day of week || 0-7 = all days of the week || 1-5 = all days of the week except saturday and sunday
                 channel.send({ content: message });
             });
         }
